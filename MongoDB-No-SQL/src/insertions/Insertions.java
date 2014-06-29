@@ -13,7 +13,7 @@ public class Insertions {
 		MongoClient mongoClient;
 		try {
 			mongoClient = new MongoClient("localhost", 27017);
-			DB db = mongoClient.getDB("no-sql");
+			DB db = mongoClient.getDB("mongo");
 
 			DBCollection nation = db.getCollection("nation");
 			DBCollection supplier = db.getCollection("supplier");
@@ -40,18 +40,52 @@ public class Insertions {
 			// Insertion example order
 			// Insertion example line_item
 			BasicDBObject line_itemObject = new BasicDBObject("quantity", 1)
-//					.append("_partsupp_id", "1")
-//					.append("_supplier_id", 1)
-//					.append("line_number", "1")
-//					.append("_order_id", 1)
-//					.append("extended_price", 123.123)
-//					.append("tax", 123.123)
-					.append("return_flag", "g")
-					.append("line_status", "b")
+					 .append("_partsupp_id", "1")
+					 .append("_supplier_id", 1)
+					 .append("line_number", "1")
+					.append("discount", 0.16)
+					.append("extended_price", 5)
+					.append("tax", 0.8)
+					.append("return_flag", "a").append("line_status", "b")
 					.append("ship_date", new Date());
-//					.append("ship_mode", "lala")
-//					.append("discount", 0.4);
+			// .append("ship_mode", "lala")
+			// .append("discount", 0.4);
 			line_item.insert(line_itemObject);
+			line_itemObject = new BasicDBObject("quantity", 4)
+			 .append("_partsupp_id", "1")
+			 .append("_supplier_id", 1)
+			 .append("line_number", "1")
+			.append("discount", 0.15)
+			.append("extended_price", 9)
+			.append("tax", 0.6)
+			.append("return_flag", "a").append("line_status", "b")
+			.append("ship_date", new Date());
+			line_item.insert(line_itemObject);
+			
+			line_itemObject = new BasicDBObject("quantity", 7)
+			.append("_partsupp_id", "1")
+			.append("_supplier_id", 1)
+			.append("line_number", "1")
+			.append("discount", 0.1)
+			.append("extended_price", 19)
+			.append("tax", 0.5)
+			.append("return_flag", "b").append("line_status", "c")
+			.append("ship_date", new Date());
+			line_item.insert(line_itemObject);
+			
+			line_itemObject = new BasicDBObject("quantity", 7)
+			.append("_partsupp_id", "1")
+			.append("_supplier_id", 1)
+			.append("line_number", "1")
+			.append("discount", 0.1)
+			.append("extended_price", 19)
+			.append("tax", 0.5)
+			.append("return_flag", "b").append("line_status", "d")
+			.append("ship_date", new Date());
+			line_item.insert(line_itemObject);
+			
+			
+			
 			// Insertion example partsupp
 			// Insertion example part
 		} catch (UnknownHostException e) {
