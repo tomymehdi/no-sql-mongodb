@@ -13,7 +13,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
-public class Queries {
+public class Query2 {
 
 	public static void main(String[] args) {
 
@@ -29,22 +29,24 @@ public class Queries {
 			DBCollection partsupp = db.getCollection("partsupp");
 			DBCollection part = db.getCollection("part");
 
-			// Query 1
-			// Create our pipeline operations 
-			// Build the $match operation
-			DBObject match = new BasicDBObject("$match", 
-					new BasicDBObject("ship_date", new BasicDBObject("$lt", new Date())));
+			// http://hmkcode.com/mongodb-java-simple-example/
+			// http://docs.mongodb.org/ecosystem/tutorial/use-aggregation-framework-with-java-driver/
 
-			// Build the $projection operation
-			BasicDBObject fields = new BasicDBObject("_id", 0);
-			fields.append("line_status", 1);
-			fields.append("return_flag", 1);
-			fields.append("quantity", 1);
-			fields.append("extended_price", 1);
-			fields.append("tax", 1);
+			// Query
+			// create our pipeline operations, first with the $match
+			DBObject match = new BasicDBObject("$match", new BasicDBObject(
+					"ship_date", new BasicDBObject("$lt", new Date())));
+
+			// build the $projection operation
+			DBObject fields = new BasicDBObject("_id", 0);
+			fields.put("line_status", 1);
+			fields.put("return_flag", 1);
+			fields.put("quantity", 1);
+			fields.put("extended_price", 1);
+			fields.put("tax", 1);
 
 	        
-	        // THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price
+	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price,*/
 	        BasicDBList justDiscountNegated = new BasicDBList();
             justDiscountNegated.add("$discount");
 	        justDiscountNegated.add(-1);
@@ -57,10 +59,10 @@ public class Queries {
 	        justTheResult.add(justMultiplyToExtendedPrice);
 	        justTheResult.add("$extended_price");
 	        BasicDBObject finalResult = new BasicDBObject("$multiply",justTheResult);
-	        fields.append("discount", finalResult);
-	        // END sum_disc_price
+	        fields.put("discount", finalResult);
+	        /* END */
 	        
-	        // THIS IS FOR sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge
+	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge*/
 	        BasicDBList justTaxPlusOne = new BasicDBList();
 	        justTaxPlusOne.add("$tax");
 	        justTaxPlusOne.add(1);
@@ -70,8 +72,9 @@ public class Queries {
 	        finalCalculation.add(justMultiplyToExtendedPrice);
 	        finalCalculation.add("$extended_price");
 	        BasicDBObject finalResult2 = new BasicDBObject("$multiply",finalCalculation);
-	        fields.append("charge", finalResult2);
-            // END sum_charge
+	        fields.put("charge", finalResult2);
+            /* END */
+	        
 	        
 			DBObject project = new BasicDBObject("$project", fields);
 
@@ -90,40 +93,19 @@ public class Queries {
 			groupFields.put("avg_disc", new BasicDBObject("$avg", "$discount"));
 			DBObject group = new BasicDBObject("$group", groupFields);
 
-			// Build the $projection operation for rename
-			BasicDBObject renameBasic = new BasicDBObject("_id", 0);
-			renameBasic.append("grouped_by", "$_id");
-			renameBasic.append("count_order", 1);
-			renameBasic.append("sum_qty", 1);
-			renameBasic.append("sum_base_price", 1);
-			renameBasic.append("sum_disc_price", 1);
-			renameBasic.append("sum_charge", 1);
-			renameBasic.append("avg_qty", 1);
-			renameBasic.append("avg_price", 1);
-			renameBasic.append("avg_disc", 1);
-			
-			DBObject rename = new BasicDBObject("$project", renameBasic);
-			
-			// Build the $sort operation
-			DBObject sortByFields = new BasicDBObject("grouped_by",1);
-			
-			DBObject sort = new BasicDBObject("$sort", sortByFields);
-			
-			// Run aggregation
+			// Finally the $sort operation
+			DBObject sort = new BasicDBObject("$sort", new BasicDBObject(
+					"line_status", -1));
+			sort.put("$sort", new BasicDBObject("return_flag", -1));
+			// run aggregation
 			List<DBObject> pipeline = Arrays
-					.asList(match, project, group, rename, sort);
+					.asList(match, project, group, sort);
 			AggregationOutput output = line_item.aggregate(pipeline);
-			
-			//Show results
+
 			for (DBObject result : output.results()) {
 				System.out.println(result);
 			}
 
-			// Query2
-
-			// Query3
-
-			// Query4
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
