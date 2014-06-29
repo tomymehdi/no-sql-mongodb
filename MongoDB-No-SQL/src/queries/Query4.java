@@ -13,7 +13,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
-public class Query2 {
+public class Query4 {
 
 	public static void main(String[] args) {
 
