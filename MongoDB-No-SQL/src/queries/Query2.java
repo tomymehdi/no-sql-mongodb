@@ -31,74 +31,72 @@ public class Query2 {
 			String type = "Type";
 			String region = "Region";
 			String size = "Size";
-			// http://hmkcode.com/mongodb-java-simple-example/
-			// http://docs.mongodb.org/ecosystem/tutorial/use-aggregation-framework-with-java-driver/
+			/*
+			 * 
+			 * SELECT s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone,
 
+				s_comment
+				
+				FROM part, supplier, partsupp, nation, region
+				
+				WHERE p_partkey = ps_partkey AND s_suppkey = ps_suppkey AND p_size = [SIZE] 
+				
+				AND p_type like '%[TYPE]' AND s_nationkey = n_nationkey AND n_regionkey = 
+				
+				r_regionkey AND r_name = '[REGION]' AND ps_supplycost = (SELECT 
+				
+				min(ps_supplycost) FROM partsupp, supplier, nation, region WHERE p_partkey = 
+				
+				ps_partkey AND s_suppkey = ps_suppkey AND s_nationkey = n_nationkey AND 
+				
+				n_regionkey = r_regionkey AND r_name = '[REGION]') 
+				
+				ORDER BY s_acctbal desc, n_name, s_name, p_partkey;
+			 * 
+			 * */
 			// Query
 			// create our pipeline operations, first with the $match
-			DBObject match = new BasicDBObject("$match", new BasicDBObject(
-					"ship_date", new BasicDBObject("$lt", new Date())));
+			
+
+			
+			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
+					"type", java.util.regex.Pattern.compile(type) ));
+			
+			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
+					"nation.region.name", new BasicDBObject("$eq", region)));
+
+			BasicDBList matchList = new BasicDBList();
+			matchList.add(matchRegion);
+			matchList.add(matchType);
+			DBObject match = new BasicDBObject("$match", matchList);
 
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
-			fields.put("line_status", 1);
-			fields.put("return_flag", 1);
-			fields.put("quantity", 1);
-			fields.put("extended_price", 1);
-			fields.put("tax", 1);
+			fields.put("acctbal", 1);
+			fields.put("supplier.name", 1);
+			fields.put("nation.name", 1);
+			fields.put("part._id", 1);
+			fields.put("supplier.address", 1);
+			fields.put("part.mfgr", 1);
+			fields.put("supplier.phone", 1);
+			fields.put("supplier.comment", 1);
 
-	        
-	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price,*/
-	        BasicDBList justDiscountNegated = new BasicDBList();
-            justDiscountNegated.add("$discount");
-	        justDiscountNegated.add(-1);
-	        BasicDBObject toSubstract = new BasicDBObject("$multiply",justDiscountNegated);
-	        BasicDBList justSubstractOneToDiscount = new BasicDBList();
-            justSubstractOneToDiscount.add(toSubstract);
-	        justSubstractOneToDiscount.add(1);
-	        BasicDBObject justMultiplyToExtendedPrice = new BasicDBObject("$add",justSubstractOneToDiscount);
-	        BasicDBList justTheResult = new BasicDBList();
-	        justTheResult.add(justMultiplyToExtendedPrice);
-	        justTheResult.add("$extended_price");
-	        BasicDBObject finalResult = new BasicDBObject("$multiply",justTheResult);
-	        fields.put("discount", finalResult);
-	        /* END */
-	        
-	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge*/
-	        BasicDBList justTaxPlusOne = new BasicDBList();
-	        justTaxPlusOne.add("$tax");
-	        justTaxPlusOne.add(1);
-	        BasicDBObject firstResult = new BasicDBObject("$add",justTaxPlusOne);
-	        BasicDBList finalCalculation = new BasicDBList();
-	        finalCalculation.add(firstResult);
-	        finalCalculation.add(justMultiplyToExtendedPrice);
-	        finalCalculation.add("$extended_price");
-	        BasicDBObject finalResult2 = new BasicDBObject("$multiply",finalCalculation);
-	        fields.put("charge", finalResult2);
-            /* END */
-	        
 	        
 			DBObject project = new BasicDBObject("$project", fields);
 
 			DBObject groupByFields = new BasicDBObject( "return_flag", "$return_flag" );
 			groupByFields.put( "line_status", "$line_status" );
-			
-			// Now the $group operation
-			DBObject groupFields = new BasicDBObject( "_id", groupByFields );
-			groupFields.put("count_order", new BasicDBObject("$sum", 1));
-			groupFields.put("sum_qty", new BasicDBObject("$sum", "$quantity"));
-			groupFields.put("sum_base_price", new BasicDBObject("$sum", "$extended_price"));
-			groupFields.put("sum_disc_price", new BasicDBObject("$sum", "$discount"));
-			groupFields.put("sum_charge", new BasicDBObject("$sum", "$charge"));
-			groupFields.put("avg_qty", new BasicDBObject("$avg", "$quantity"));
-			groupFields.put("avg_price", new BasicDBObject("$avg", "$extended_price"));
-			groupFields.put("avg_disc", new BasicDBObject("$avg", "$discount"));
-			DBObject group = new BasicDBObject("$group", groupFields);
+
+
+			DBObject group = new BasicDBObject(); // EMPTY GROUP ??
 
 			// Finally the $sort operation
 			DBObject sort = new BasicDBObject("$sort", new BasicDBObject(
 					"line_status", -1));
-			sort.put("$sort", new BasicDBObject("return_flag", -1));
+			sort.put("$sort", new BasicDBObject("return_flag", 1));
+			sort.put("$sort", new BasicDBObject("nation.name", -1));
+			sort.put("$sort", new BasicDBObject("supplier.name", -1));
+			sort.put("$sort", new BasicDBObject("part._id", -1));
 			// run aggregation
 			List<DBObject> pipeline = Arrays
 					.asList(match, project, group, sort);

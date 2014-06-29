@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.bson.NewBSONDecoder;
+
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -28,27 +30,47 @@ public class Query4 {
 			DBCollection line_item = db.getCollection("line_item");
 			DBCollection partsupp = db.getCollection("partsupp");
 			DBCollection part = db.getCollection("part");
-			String type = "Type";
 			String region = "Region";
-			String size = "Size";
-			// http://hmkcode.com/mongodb-java-simple-example/
-			// http://docs.mongodb.org/ecosystem/tutorial/use-aggregation-framework-with-java-driver/
+            /*
+             * SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
 
+				FROM customer, orders, lineitem, supplier, nation, region
+				
+				WHERE c_custkey = o_custkey AND l_orderkey = o_orderkey AND l_suppkey = 
+				
+				s_suppkey AND c_nationkey = s_nationkey AND s_nationkey = n_nationkey AND 
+				
+				n_regionkey = r_regionkey AND r_name = '[REGION]' AND o_orderdate >= date 
+				
+				'[DATE]' AND o_orderdate < date '[DATE]' + interval '1' year
+				
+				GROUP BY n_name
+				
+				ORDER BY revenue desc;
+             * 
+             * 
+             * */
+			
+			
 			// Query
 			// create our pipeline operations, first with the $match
-			DBObject match = new BasicDBObject("$match", new BasicDBObject(
-					"ship_date", new BasicDBObject("$lt", new Date())));
+			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
+					"nation.region.name", new BasicDBObject("$eq", region)));
 
+			DBObject matchOrderDate = new BasicDBObject("$match", 
+					new BasicDBObject("order_date", new BasicDBObject("$gte", new Date()).append("$lte",new Date()))); // + 1 YEAR TODO !!
+			BasicDBList matchList = new BasicDBList();
+			matchList.add(matchRegion);
+			matchList.add(matchOrderDate);
+			DBObject match = new BasicDBObject("$match", matchList);
+			  
+		
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
-			fields.put("line_status", 1);
-			fields.put("return_flag", 1);
-			fields.put("quantity", 1);
+			fields.put("nation.name", 1);
 			fields.put("extended_price", 1);
-			fields.put("tax", 1);
 
-	        
-	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price,*/
+			 // THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price
 	        BasicDBList justDiscountNegated = new BasicDBList();
             justDiscountNegated.add("$discount");
 	        justDiscountNegated.add(-1);
@@ -62,47 +84,26 @@ public class Query4 {
 	        justTheResult.add("$extended_price");
 	        BasicDBObject finalResult = new BasicDBObject("$multiply",justTheResult);
 	        fields.put("discount", finalResult);
-	        /* END */
-	        
-	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge*/
-	        BasicDBList justTaxPlusOne = new BasicDBList();
-	        justTaxPlusOne.add("$tax");
-	        justTaxPlusOne.add(1);
-	        BasicDBObject firstResult = new BasicDBObject("$add",justTaxPlusOne);
-	        BasicDBList finalCalculation = new BasicDBList();
-	        finalCalculation.add(firstResult);
-	        finalCalculation.add(justMultiplyToExtendedPrice);
-	        finalCalculation.add("$extended_price");
-	        BasicDBObject finalResult2 = new BasicDBObject("$multiply",finalCalculation);
-	        fields.put("charge", finalResult2);
-            /* END */
+	        // END sum_disc_price
+			
 	        
 	        
-			DBObject project = new BasicDBObject("$project", fields);
+	        DBObject project = new BasicDBObject("$project", fields);
 
-			DBObject groupByFields = new BasicDBObject( "return_flag", "$return_flag" );
-			groupByFields.put( "line_status", "$line_status" );
+			DBObject groupByFields = new BasicDBObject( "nation.name", "$nation.name" );
 			
 			// Now the $group operation
 			DBObject groupFields = new BasicDBObject( "_id", groupByFields );
-			groupFields.put("count_order", new BasicDBObject("$sum", 1));
-			groupFields.put("sum_qty", new BasicDBObject("$sum", "$quantity"));
-			groupFields.put("sum_base_price", new BasicDBObject("$sum", "$extended_price"));
-			groupFields.put("sum_disc_price", new BasicDBObject("$sum", "$discount"));
-			groupFields.put("sum_charge", new BasicDBObject("$sum", "$charge"));
-			groupFields.put("avg_qty", new BasicDBObject("$avg", "$quantity"));
-			groupFields.put("avg_price", new BasicDBObject("$avg", "$extended_price"));
-			groupFields.put("avg_disc", new BasicDBObject("$avg", "$discount"));
+			groupFields.put("revenue", new BasicDBObject("$sum", "$discount"));
 			DBObject group = new BasicDBObject("$group", groupFields);
 
 			// Finally the $sort operation
 			DBObject sort = new BasicDBObject("$sort", new BasicDBObject(
-					"line_status", -1));
-			sort.put("$sort", new BasicDBObject("return_flag", -1));
+					"revenue", 1));
 			// run aggregation
 			List<DBObject> pipeline = Arrays
 					.asList(match, project, group, sort);
-			AggregationOutput output = line_item.aggregate(pipeline);
+			AggregationOutput output = order.aggregate(pipeline);
 
 			for (DBObject result : output.results()) {
 				System.out.println(result);
