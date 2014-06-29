@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.mongodb.AggregationOutput;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -42,15 +43,39 @@ public class Queries {
 			fields.put("return_flag", 1);
 			fields.put("quantity", 1);
 			fields.put("extended_price", 1);
-			fields.put("discount", 1);
-			
-	    
-			// fields.put("sum_base_price", new BasicDBObject("$sum",
-			// "extended_price"));
-			// fields.put("sum_disc_price", new BasicDBObject("$sum",
-			// "discount"));
-			// fields.put("avg_price", new
-			// BasicDBObject("$avg","extended_price"));
+			fields.put("tax", 1);
+
+	        
+	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price,*/
+	        BasicDBList justDiscountNegated = new BasicDBList();
+            justDiscountNegated.add("$discount");
+	        justDiscountNegated.add(-1);
+	        BasicDBObject toSubstract = new BasicDBObject("$multiply",justDiscountNegated);
+	        BasicDBList justSubstractOneToDiscount = new BasicDBList();
+            justSubstractOneToDiscount.add(toSubstract);
+	        justSubstractOneToDiscount.add(1);
+	        BasicDBObject justMultiplyToExtendedPrice = new BasicDBObject("$add",justSubstractOneToDiscount);
+	        BasicDBList justTheResult = new BasicDBList();
+	        justTheResult.add(justMultiplyToExtendedPrice);
+	        justTheResult.add("$extended_price");
+	        BasicDBObject finalResult = new BasicDBObject("$multiply",justTheResult);
+	        fields.put("discount", finalResult);
+	        /* END */
+	        
+	        /*THIS IS FOR sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge*/
+	        BasicDBList justTaxPlusOne = new BasicDBList();
+	        justTaxPlusOne.add("$tax");
+	        justTaxPlusOne.add(1);
+	        BasicDBObject firstResult = new BasicDBObject("$add",justTaxPlusOne);
+	        BasicDBList finalCalculation = new BasicDBList();
+	        finalCalculation.add(firstResult);
+	        finalCalculation.add(justMultiplyToExtendedPrice);
+	        finalCalculation.add("$extended_price");
+	        BasicDBObject finalResult2 = new BasicDBObject("$multiply",finalCalculation);
+	        fields.put("charge", finalResult2);
+            /* END */
+	        
+	        
 			DBObject project = new BasicDBObject("$project", fields);
 
 			DBObject groupByFields = new BasicDBObject( "return_flag", "$return_flag" );
@@ -61,8 +86,11 @@ public class Queries {
 			groupFields.put("count_order", new BasicDBObject("$sum", 1));
 			groupFields.put("sum_qty", new BasicDBObject("$sum", "$quantity"));
 			groupFields.put("sum_base_price", new BasicDBObject("$sum", "$extended_price"));
-			groupFields.put("sum_discount", new BasicDBObject("$sum", "$discount"));
-			
+			groupFields.put("sum_disc_price", new BasicDBObject("$sum", "$discount"));
+			groupFields.put("sum_charge", new BasicDBObject("$sum", "$charge"));
+			groupFields.put("avg_qty", new BasicDBObject("$avg", "$quantity"));
+			groupFields.put("avg_price", new BasicDBObject("$avg", "$extended_price"));
+			groupFields.put("avg_disc", new BasicDBObject("$avg", "$discount"));
 			DBObject group = new BasicDBObject("$group", groupFields);
 
 			// Finally the $sort operation
