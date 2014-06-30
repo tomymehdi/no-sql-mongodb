@@ -1,11 +1,11 @@
 package queries;
 
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import org.bson.NewBSONDecoder;
 
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBList;
@@ -49,26 +49,32 @@ public class Query4 {
 
 			// Query
 			// create our pipeline operations, first with the $match
-			DBObject matchRegion = new BasicDBObject("$match",
-					new BasicDBObject("nation.region.name", new BasicDBObject(
-							"$eq", region)));
+			
+			
+			DBObject matchRegionCustomer = new BasicDBObject("$match", new BasicDBObject(
+					"order.customer.nation.region.name", region ));
+		
+			DBObject matchRegionSupplier = new BasicDBObject("$match", new BasicDBObject(
+					"order.supplier.nation.region.name", region ));
 
+			Date newDate1Year = new Date();
+			Date newDate = (Date) newDate1Year.clone();
+			newDate1Year.setDate(newDate1Year.getDate()+365);
 			DBObject matchOrderDate = new BasicDBObject("$match",
-					new BasicDBObject("order_date", new BasicDBObject("$gt",
-							new Date()).append("$lt", new Date()))); // + 1
-																		// YEAR
-																		// TODO
-																		// !!
-			BasicDBList matchList = new BasicDBList();
-			matchList.add(matchRegion);
-			matchList.add(matchOrderDate);
-			DBObject match = new BasicDBObject("$match", matchList);
+					new BasicDBObject("order.order_date", new BasicDBObject("$gt",
+							newDate).append("$lt", newDate1Year))); 
+			BasicDBList or = new BasicDBList();
+			or.add(matchRegionCustomer);
+			or.add(matchRegionSupplier);
+			or.add(matchOrderDate);
+			DBObject orCriteria = new BasicDBObject("$or", or);
+			DBObject matchCriteria = new BasicDBObject("$match", orCriteria);
+			DBObject match = new BasicDBObject("$match", matchCriteria);
 
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
-			fields.put("nation.name", 1);
+			fields.put("order.customer.nation.name", 1);
 			fields.put("extended_price", 1);
-
 			// THIS IS FOR sum(l_extendedprice*(1-l_discount)) as sum_disc_price
 			BasicDBList justDiscountNegated = new BasicDBList();
 			justDiscountNegated.add("$discount");
@@ -90,8 +96,8 @@ public class Query4 {
 
 			DBObject project = new BasicDBObject("$project", fields);
 
-			DBObject groupByFields = new BasicDBObject("nation.name",
-					"$nation.name");
+			DBObject groupByFields = new BasicDBObject("order.customer.nation.name",
+					"$order.customer.nation.name");
 
 			// Now the $group operation
 			DBObject groupFields = new BasicDBObject("_id", groupByFields);
