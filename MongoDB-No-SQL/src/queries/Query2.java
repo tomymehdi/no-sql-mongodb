@@ -56,6 +56,19 @@ public class Query2 {
 			 * */
 			//Query
 			
+			DBObject matchSize = new BasicDBObject("$match", new BasicDBObject(
+					"part.size", new BasicDBObject("$eq", size)));
+			
+			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
+					"supplier.nation.region.name", new BasicDBObject("$eq", region)));
+
+			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
+					"part.type", java.util.regex.Pattern.compile(type) ));
+
+			BasicDBList matchList = new BasicDBList();
+			matchList.add(matchSize);
+			matchList.add(matchRegion);
+			matchList.add(matchType);
 			// build the $projection operation
 			DBObject fieldsAux = new BasicDBObject("supply_cost", 1);
 			
@@ -76,22 +89,11 @@ public class Query2 {
 			
 			// Query
 			// create our pipeline operations, first with the $match
-			DBObject matchSize = new BasicDBObject("$match", new BasicDBObject(
-					"part.size", new BasicDBObject("$eq", size)));
 			
-			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
-					"supplier.nation.region.name", new BasicDBObject("$eq", region)));
-
-			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
-					"part.type", java.util.regex.Pattern.compile(type) ));
 			
 			DBObject matchMinCost = new BasicDBObject("$match", new BasicDBObject( 
 					"supply_cost", new BasicDBObject("$eq", minValue)));
 
-			BasicDBList matchList = new BasicDBList();
-			matchList.add(matchSize);
-			matchList.add(matchRegion);
-			matchList.add(matchType);
 			matchList.add(matchMinCost);
 			DBObject match = new BasicDBObject("$match", matchList);
 

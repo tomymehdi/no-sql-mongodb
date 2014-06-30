@@ -21,12 +21,7 @@ public class Query3 {
 			mongoClient = new MongoClient("localhost", 27017);
 			DB db = mongoClient.getDB("mongo");
 
-			DBCollection nation = db.getCollection("nation");
-			DBCollection supplier = db.getCollection("supplier");
-			DBCollection order = db.getCollection("order");
 			DBCollection line_item = db.getCollection("line_item");
-			DBCollection partsupp = db.getCollection("partsupp");
-			DBCollection part = db.getCollection("part");
 			String Segment = "Type";
 
 			
@@ -92,12 +87,12 @@ public class Query3 {
 			// run aggregation
 			List<DBObject> pipeline = Arrays
 					.asList(match, project, group, sort);
-			AggregationOutput output = order.aggregate(pipeline);
+			AggregationOutput output = line_item.aggregate(pipeline);
 
 			for (DBObject result : output.results()) {
 				System.out.println(result);
 			}
-
+			System.out.println("End");
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
