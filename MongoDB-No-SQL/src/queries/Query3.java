@@ -2,6 +2,7 @@ package queries;
 
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import com.mongodb.AggregationOutput;
@@ -22,7 +23,11 @@ public class Query3 {
 			DB db = mongoClient.getDB("mongo");
 
 			DBCollection line_item = db.getCollection("line_item");
-			String Segment = "Type";
+			String Segment = "test1";
+			Date date1 = new Date();
+			date1.setDate(date1.getDate()+365);
+			Date date2 = new Date();
+			date2.setDate(date2.getDate()-365);
 
 			
 			
@@ -47,11 +52,12 @@ public class Query3 {
 			// Query
 			// create our pipeline operations, first with the $match
 			DBObject match = new BasicDBObject("$match", new BasicDBObject(
-					"customer.mkt_segment", new BasicDBObject("$eq", Segment )));
+					"order.customer.mkt_segment", Segment)).append("$match",
+							new BasicDBObject("order.order_date", new BasicDBObject("$lt",date1).append("$gt", date2)));;
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 1);
-			fields.put("order_date", 1);
-			fields.put("ship_priority", 1);
+			fields.put("order.order_date", 1);
+			fields.put("order.ship_priority", 1);
 
 	        // THIS IS FOR sum(l_extendedprice*(1-l_discount)) as  sum_disc_price
 	        BasicDBList justDiscountNegated = new BasicDBList();
@@ -66,18 +72,18 @@ public class Query3 {
 	        justTheResult.add(justMultiplyToExtendedPrice);
 	        justTheResult.add("$extended_price");
 	        BasicDBObject finalResult = new BasicDBObject("$multiply",justTheResult);
-	        fields.put("discount", finalResult);
+	        fields.put("revenue", finalResult);
 	        // END sum_disc_price
 
 			DBObject project = new BasicDBObject("$project", fields);
 
 			DBObject groupByFields = new BasicDBObject( "_id", "$_id" );
-			groupByFields.put( "order_date", "$order_date" );
-			groupByFields.put( "ship_priority", "$ship_priority" );
+			groupByFields.put( "order.order_date", "$order.order_date" );
+			groupByFields.put( "order.ship_priority", "$order.ship_priority" );
 			
 			// Now the $group operation
 			DBObject groupFields = new BasicDBObject( "_id", groupByFields );
-			groupFields.put("revenue", new BasicDBObject("$sum", "$discount"));
+			groupFields.put("revenue", new BasicDBObject("$sum", "$revenue"));
 			DBObject group = new BasicDBObject("$group", groupFields);
 
 			// Finally the $sort operation
@@ -92,7 +98,6 @@ public class Query3 {
 			for (DBObject result : output.results()) {
 				System.out.println(result);
 			}
-			System.out.println("End");
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();

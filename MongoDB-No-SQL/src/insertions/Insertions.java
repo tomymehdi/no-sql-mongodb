@@ -87,13 +87,22 @@ public class Insertions {
 			.append("mkt_segment", "test1")
 			.append("comment", "lmfaoo")
 			.append("nation", nationObject2);
+
 			BasicDBObject customerObject2 = new BasicDBObject("_id", 1)
 			.append("name", "nombre del segundo")
 			.append("address", "suipacha 32444")
 			.append("phone", "987654")
-			.append("mkt_segment", "testasdf31")
+			.append("mkt_segment", "test1")
 			.append("comment", "kateioasdf")
 			.append("nation", nationObject3);
+			
+			BasicDBObject customerObject3 = new BasicDBObject("_id", 1)
+			.append("name", "nombre del tercero")
+			.append("address", "cabrera 32444")
+			.append("phone", "12423")
+			.append("mkt_segment", "test1")
+			.append("comment", "comment3")
+			.append("nation", nationObject);
 			// OrderObjects
 			BasicDBObject orderObject1 = new BasicDBObject("_id", 1)
 			.append("order_status", "s")
@@ -112,7 +121,7 @@ public class Insertions {
 			.append("clerk", "clerk")
 			.append("ship_priority", 10)
 			.append("comment", "comment2")
-			.append("customer", customerObject1);
+			.append("customer", customerObject3);
 			BasicDBObject orderObject3 = new BasicDBObject("_id", 3)
 			.append("order_status", "s")
 			.append("total_price", 57.10)
