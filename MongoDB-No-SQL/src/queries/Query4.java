@@ -50,26 +50,12 @@ public class Query4 {
 			// Query
 			// create our pipeline operations, first with the $match
 			
-			
-			DBObject matchRegionCustomer = new BasicDBObject("$match", new BasicDBObject(
-					"order.customer.nation.region.name", region ));
-		
-			DBObject matchRegionSupplier = new BasicDBObject("$match", new BasicDBObject(
-					"order.supplier.nation.region.name", region ));
-
 			Date newDate1Year = new Date();
 			Date newDate = (Date) newDate1Year.clone();
 			newDate1Year.setDate(newDate1Year.getDate()+365);
-			DBObject matchOrderDate = new BasicDBObject("$match",
-					new BasicDBObject("order.order_date", new BasicDBObject("$gt",
-							newDate).append("$lt", newDate1Year))); 
-			BasicDBList or = new BasicDBList();
-			or.add(matchRegionCustomer);
-			or.add(matchRegionSupplier);
-			or.add(matchOrderDate);
-			DBObject orCriteria = new BasicDBObject("$or", or);
-			DBObject matchCriteria = new BasicDBObject("$match", orCriteria);
-			DBObject match = new BasicDBObject("$match", matchCriteria);
+			DBObject match = new BasicDBObject("$match", new BasicDBObject(
+					"order.customer.nation.region.name", region )).append("$match", new BasicDBObject("order.supplier.nation.region.name", region)).append("$match",
+					new BasicDBObject("order.order_date", new BasicDBObject("$gt",newDate).append("$lt", newDate1Year)));
 
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
