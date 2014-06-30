@@ -22,12 +22,7 @@ public class Query1 {
 			mongoClient = new MongoClient("localhost", 27017);
 			DB db = mongoClient.getDB("mongo");
 
-			DBCollection nation = db.getCollection("nation");
-			DBCollection supplier = db.getCollection("supplier");
-			DBCollection order = db.getCollection("order");
 			DBCollection line_item = db.getCollection("line_item");
-			DBCollection partsupp = db.getCollection("partsupp");
-			DBCollection part = db.getCollection("part");
 
 			// Query 1
 			// Create our pipeline operations 

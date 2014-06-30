@@ -2,7 +2,6 @@ package queries;
 
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import com.mongodb.AggregationOutput;
@@ -22,12 +21,7 @@ public class Query2 {
 			mongoClient = new MongoClient("localhost", 27017);
 			DB db = mongoClient.getDB("mongo");
 
-			DBCollection nation = db.getCollection("nation");
-			DBCollection supplier = db.getCollection("supplier");
-			DBCollection order = db.getCollection("order");
-			DBCollection line_item = db.getCollection("line_item");
 			DBCollection partsupp = db.getCollection("partsupp");
-			DBCollection part = db.getCollection("part");
 			String type = "Type";
 			String region = "Region";
 			String size = "Size";
@@ -43,64 +37,86 @@ public class Query2 {
 				
 				AND p_type like '%[TYPE]' AND s_nationkey = n_nationkey AND n_regionkey = 
 				
-				r_regionkey AND r_name = '[REGION]' AND ps_supplycost = (SELECT 
+				r_regionkey AND r_name = '[REGION]' 
 				
-				min(ps_supplycost) FROM partsupp, supplier, nation, region WHERE p_partkey = 
+				AND ps_supplycost = 
 				
-				ps_partkey AND s_suppkey = ps_suppkey AND s_nationkey = n_nationkey AND 
+					(SELECT 
 				
-				n_regionkey = r_regionkey AND r_name = '[REGION]') 
+					min(ps_supplycost) 
+					
+					FROM partsupp, supplier, nation, region 
+					
+					WHERE p_partkey = ps_partkey AND s_suppkey = ps_suppkey AND s_nationkey = n_nationkey AND 
+					
+					n_regionkey = r_regionkey AND r_name = '[REGION]') 
 				
 				ORDER BY s_acctbal desc, n_name, s_name, p_partkey;
 			 * 
 			 * */
+			//Query
+			
+			// build the $projection operation
+			DBObject fieldsAux = new BasicDBObject("supply_cost", 1);
+			
+			DBObject projectAux = new BasicDBObject("$project", fieldsAux);
+			
+			DBObject sortAux = new BasicDBObject("$sort", new BasicDBObject("supply_cost", 1));
+			
+			DBObject limit = new BasicDBObject("$limit", 1);
+			// run aggregation
+			List<DBObject> pipeline2 = Arrays.asList(projectAux, sortAux, limit);
+			AggregationOutput output2 = partsupp.aggregate(pipeline2);
+			for (DBObject result : output2.results()) {
+				System.out.println(result);
+				System.out.println(result.get("supply_cost"));
+			}
+			Object minValue = output2.results().iterator().next().get("supply_cost");
+			
+			
 			// Query
 			// create our pipeline operations, first with the $match
-			
-
-			
-			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
-					"type", java.util.regex.Pattern.compile(type) ));
+			DBObject matchSize = new BasicDBObject("$match", new BasicDBObject(
+					"part.size", new BasicDBObject("$eq", size)));
 			
 			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
-					"nation.region.name", new BasicDBObject("$eq", region)));
+					"supplier.nation.region.name", new BasicDBObject("$eq", region)));
+
+			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
+					"part.type", java.util.regex.Pattern.compile(type) ));
+			
+			DBObject matchMinCost = new BasicDBObject("$match", new BasicDBObject("$eq", minValue));
 
 			BasicDBList matchList = new BasicDBList();
+			matchList.add(matchSize);
 			matchList.add(matchRegion);
 			matchList.add(matchType);
+			matchList.add(matchMinCost);
 			DBObject match = new BasicDBObject("$match", matchList);
 
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
-			fields.put("acctbal", 1);
+			fields.put("supplier.acctbal", 1);
 			fields.put("supplier.name", 1);
-			fields.put("nation.name", 1);
+			fields.put("supplier.nation.name", 1);
 			fields.put("part._id", 1);
 			fields.put("supplier.address", 1);
 			fields.put("part.mfgr", 1);
+			fields.put("supplier.address", 1);
 			fields.put("supplier.phone", 1);
 			fields.put("supplier.comment", 1);
 
-	        
 			DBObject project = new BasicDBObject("$project", fields);
 
-			DBObject groupByFields = new BasicDBObject( "return_flag", "$return_flag" );
-			groupByFields.put( "line_status", "$line_status" );
-
-
-			DBObject group = new BasicDBObject(); // EMPTY GROUP ??
-
 			// Finally the $sort operation
-			DBObject sort = new BasicDBObject("$sort", new BasicDBObject(
-					"line_status", -1));
-			sort.put("$sort", new BasicDBObject("return_flag", 1));
-			sort.put("$sort", new BasicDBObject("nation.name", -1));
+			DBObject sort = new BasicDBObject("$sort", new BasicDBObject("supplier.acctbal", 1));
+			sort.put("$sort", new BasicDBObject("supplier.nation.name", -1));
 			sort.put("$sort", new BasicDBObject("supplier.name", -1));
 			sort.put("$sort", new BasicDBObject("part._id", -1));
 			// run aggregation
 			List<DBObject> pipeline = Arrays
-					.asList(match, project, group, sort);
-			AggregationOutput output = line_item.aggregate(pipeline);
+					.asList(match, project, sort);
+			AggregationOutput output = partsupp.aggregate(pipeline);
 
 			for (DBObject result : output.results()) {
 				System.out.println(result);
