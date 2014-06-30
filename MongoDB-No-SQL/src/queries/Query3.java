@@ -15,6 +15,7 @@ import com.mongodb.MongoClient;
 
 public class Query3 {
 
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
 
 		MongoClient mongoClient;
@@ -88,8 +89,7 @@ public class Query3 {
 
 			// Finally the $sort operation
 			DBObject sort = new BasicDBObject("$sort", new BasicDBObject(
-					"revenue", 1));
-			sort.put("$sort", new BasicDBObject("order_date", -1));
+					"revenue", 1)).append("$sort", new BasicDBObject("order_date", -1));
 			// run aggregation
 			List<DBObject> pipeline = Arrays
 					.asList(match, project, group, sort);

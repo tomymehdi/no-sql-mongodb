@@ -70,7 +70,7 @@ public class Query2 {
 			AggregationOutput output2 = partsupp.aggregate(pipeline2);
 			for (DBObject result : output2.results()) {
 				System.out.println(result);
-				System.out.println(result.get("supply_cost"));
+				System.out.println("The minimum Supply Cost is: " + result.get("supply_cost"));
 			}
 			Object minValue = output2.results().iterator().next().get("supply_cost");
 
@@ -98,10 +98,10 @@ public class Query2 {
 			DBObject project = new BasicDBObject("$project", fields);
 
 			// Finally the $sort operation
-			DBObject sort = new BasicDBObject("$sort", new BasicDBObject("supplier.acctbal", 1));
-			sort.put("$sort", new BasicDBObject("supplier.nation.name", -1));
-			sort.put("$sort", new BasicDBObject("supplier.name", -1));
-			sort.put("$sort", new BasicDBObject("part._id", -1));
+			DBObject sort = new BasicDBObject("$sort", new BasicDBObject("supplier.acctbal", 1))
+					.append("$sort", new BasicDBObject("supplier.nation.name", -1))
+					.append("$sort", new BasicDBObject("supplier.name", -1))
+					.append("$sort", new BasicDBObject("part._id", -1));
 			// run aggregation
 			List<DBObject> pipeline = Arrays
 					.asList(match, project, sort);

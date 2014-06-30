@@ -1,9 +1,7 @@
 package queries;
 
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -17,6 +15,7 @@ import com.mongodb.MongoClient;
 
 public class Query4 {
 
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
 
 		MongoClient mongoClient;
