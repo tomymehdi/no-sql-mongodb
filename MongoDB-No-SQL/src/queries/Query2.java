@@ -85,7 +85,7 @@ public class Query2 {
 			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
 					"part.type", java.util.regex.Pattern.compile(type) ));
 			
-			DBObject matchMinCost = new BasicDBObject("$match", new BasicDBObject("$eq", minValue));
+			DBObject matchMinCost = new BasicDBObject("$match", new BasicDBObject( "supply_cost", new BasicDBObject("$eq", minValue)));
 
 			BasicDBList matchList = new BasicDBList();
 			matchList.add(matchSize);
