@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.mongodb.AggregationOutput;
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -22,9 +21,9 @@ public class Query2 {
 			DB db = mongoClient.getDB("mongo");
 
 			DBCollection partsupp = db.getCollection("partsupp");
-			String type = "Type";
-			String region = "Region";
-			String size = "Size";
+			String type = "type";
+			String region = "America del sur";
+			int size = 1;
 			/*
 			 * 
 			 * SELECT s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone,
@@ -55,47 +54,34 @@ public class Query2 {
 			 * 
 			 * */
 			//Query
-			
-			DBObject matchSize = new BasicDBObject("$match", new BasicDBObject(
-					"part.size", new BasicDBObject("$eq", size)));
-			
-			DBObject matchRegion = new BasicDBObject("$match", new BasicDBObject(
-					"supplier.nation.region.name", new BasicDBObject("$eq", region)));
-
-			DBObject matchType = new BasicDBObject("$match", new BasicDBObject(
-					"part.type", java.util.regex.Pattern.compile(type) ));
-
-			BasicDBList matchList = new BasicDBList();
-			matchList.add(matchSize);
-			matchList.add(matchRegion);
-			matchList.add(matchType);
+			//$match operations
+			DBObject matchAux = new BasicDBObject("$match", new BasicDBObject(
+					"supplier.nation.region.name", region ));
 			// build the $projection operation
 			DBObject fieldsAux = new BasicDBObject("supply_cost", 1);
-			
+
 			DBObject projectAux = new BasicDBObject("$project", fieldsAux);
-			
+
 			DBObject sortAux = new BasicDBObject("$sort", new BasicDBObject("supply_cost", 1));
-			
+
 			DBObject limit = new BasicDBObject("$limit", 1);
 			// run aggregation
-			List<DBObject> pipeline2 = Arrays.asList(projectAux, sortAux, limit);
+			List<DBObject> pipeline2 = Arrays.asList(matchAux, projectAux, sortAux, limit);
 			AggregationOutput output2 = partsupp.aggregate(pipeline2);
 			for (DBObject result : output2.results()) {
 				System.out.println(result);
 				System.out.println(result.get("supply_cost"));
 			}
 			Object minValue = output2.results().iterator().next().get("supply_cost");
-			
-			
+
+
 			// Query
 			// create our pipeline operations, first with the $match
-			
-			
-			DBObject matchMinCost = new BasicDBObject("$match", new BasicDBObject( 
-					"supply_cost", new BasicDBObject("$eq", minValue)));
-
-			matchList.add(matchMinCost);
-			DBObject match = new BasicDBObject("$match", matchList);
+			DBObject match = new BasicDBObject("$match", new BasicDBObject(
+					"part.size", new BasicDBObject("$eq", size)))
+			.append("$match", new BasicDBObject("supplier.nation.region.name", region ))
+			.append("$match", new BasicDBObject("part.type", java.util.regex.Pattern.compile(type) ))
+			.append("$match", new BasicDBObject("supply_cost", new BasicDBObject("$eq", minValue)));
 
 			// build the $projection operation
 			DBObject fields = new BasicDBObject("_id", 0);
