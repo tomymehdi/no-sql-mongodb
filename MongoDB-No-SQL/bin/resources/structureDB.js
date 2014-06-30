@@ -26,11 +26,20 @@ line_item = {
 			"_id": 1,
 			"name": "name",
 			"address": "address",
-			"_nation_id": 1,
 			"phone": "1234577",
 			"acctbal": 10,
 			"mkt_segment": "text",
-			"comment": "comment"
+			"comment": "comment",
+			"nation": {
+				"_id": 1,
+				"name": "name",
+				"comment": "comment",
+				"region": {
+					"_id": 1, 
+					"name": "name", 
+					"comment": "comment"
+				}
+			}
 		},
 	},
 	"supplier": {
